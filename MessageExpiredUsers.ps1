@@ -43,11 +43,11 @@ param (
     [Parameter(Mandatory, ParameterSetName = "providesauth_sendsmail")]
     [Parameter(Mandatory, ParameterSetName = "sendsmail")]
     [string]$smtpPassword,
-    [ValidateScript( { Test-Path $_ -PathType Leaf })]
+    [ValidateScript( { [string]::IsNullOrWhiteSpace($_) -or (Test-Path $_ -PathType Leaf) })]
     [string]$emailBodyTemplateFile,
-    [ValidateScript( { Test-Path $_ -PathType Leaf })]
+    [ValidateScript( { [string]::IsNullOrWhiteSpace($_) -or (Test-Path $_ -PathType Leaf) })]
     [string]$emailSubjectTemplateFile,
-    [ValidateScript( { Test-Path (Split-Path $_) -PathType Container })]
+    [ValidateScript( { [string]::IsNullOrWhiteSpace($_) -or (Test-Path (Split-Path $_) -PathType Container) })]
     [string]$logFile,
     [ValidatePattern('^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$')]
     [string]$singleRecipient,
