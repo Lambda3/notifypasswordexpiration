@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Publish Docker image
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  push_to_registry:
+    name: Push Docker image to Docker Hub
+    runs-on: windows-2019
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta_latest
+        uses: docker/metadata-action@v3
+        with:
+          images: lambda3/notifypasswordexpiration
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
+
+      - name: Build and push
+        working-directory: .
+        run: |
+          docker login -u $env:DOCKER_USERNAME -p $env:DOCKER_PASSWORD
+          Invoke-Expression "docker build $($env:TAGS.Split("`n") | % { '-t "' + $_ + '"' }) $($env:LABELS.Split("`n") | % { '--label "' + $_ + '"' }) ."
+          $($env:TAGS.Split("`n") | % { docker push $_ })
+          docker logout
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          TAGS: ${{ steps.meta_latest.outputs.tags }}
+          LABELS: ${{ steps.meta_latest.outputs.labels }}
