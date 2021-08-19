@@ -19,6 +19,7 @@ if (!($adDomain)) {
     $adDomain = (Get-ADDomain -Current LocalComputer).Forest
 }
 
+$adCredential = $null
 if ($adUsername -and $adPassword) {
     $adCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $adUsername, (ConvertTo-SecureString $adPassword -AsPlainText -Force)
 }
