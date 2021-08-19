@@ -18,7 +18,7 @@ param (
     [Parameter(Mandatory)][string] $adUsername,
     [Parameter(Mandatory)][string] $adPassword,
     [ValidatePattern('^((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))|(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*)$')]
-    [Parameter(Mandatory)][string]$adDomain,
+    [string]$adDomain,
     [Parameter(Mandatory)][string]$adSearchBase,
     [ValidatePattern('^((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))|(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*)$')]
     [Parameter(Mandatory, ParameterSetName = "sendsmail")][string]$smtpServer,
@@ -55,6 +55,10 @@ function Get-RandomPassword {
 }
 
 Write-Verbose "Starting..."
+
+if (!($adDomain)) {
+    $adDomain = (Get-ADDomain -Current LocalComputer).Forest
+}
 
 $adCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $adUsername, (ConvertTo-SecureString $adPassword -AsPlainText -Force)
 if ($emailSubjectTemplateFile) {
