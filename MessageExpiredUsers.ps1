@@ -163,7 +163,7 @@ foreach ($user in $users) {
         $emailaddress = $theSingleRecipient
     }
     $body = $ExecutionContext.InvokeCommand.ExpandString($emailBodyTemplate)
-    $subject = $ExecutionContext.InvokeCommand.ExpandString($subjectTemplate)
+    $subject = $ExecutionContext.InvokeCommand.ExpandString($subjectTemplate).Replace("`r", ' ').Replace("`n", ' ')
     if ($emailaddress -ne $user.EmailAddress) {
         $completeEmailAddress = "$emailaddress ($($user.EmailAddress))"
     } else {
@@ -181,13 +181,13 @@ foreach ($user in $users) {
         if ($simulate) {
             Write-Output "`nWould have sent message to $completeEmailAddress`:`nSubject: $subject`nBody:`n$body"
         } else {
-            Write-Verbose "`nSending message to $completeEmailAddress..."
+            Write-Verbose "`nSending message to $completeEmailAddress with subject $subject..."
             Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -From $from -To $emailaddress -Subject $subject -Body $body -BodyAsHtml -Priority "High" -Encoding "utf8" -UseSsl -Credential $smtpCredential
         }
     }
     if ($logFile) { Add-Content $logfile "$formattedDate,$Name,$emailaddress,$daysSinceExpired,$(Get-Date $expiredOn -Format yyyyMMdd),$resetPassword" }
-    $percentComplete = [math]::Round($currentPosition * 100.0 / $count, 2)
     if (!($noProgress)) {
+        $percentComplete = [math]::Round($currentPosition * 100.0 / $count, 2)
         Write-Progress -Activity "Checking users..." -Status "$percentComplete% Complete:" -PercentComplete $percentComplete
     }
 }
