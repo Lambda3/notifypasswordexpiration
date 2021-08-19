@@ -51,6 +51,9 @@ param (
     [string]$logFile,
     [ValidatePattern('^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$')]
     [string]$singleRecipient,
+    [Parameter(ParameterSetName = "providesauth_sendsmail")]
+    [Parameter(ParameterSetName = "sendsmail")]
+    [switch]$dontResetPassword,
     [switch]$noProgress,
     [Parameter(ParameterSetName = "providesauth_doesnotsendmail")]
     [Parameter(ParameterSetName = "doesnotsendmail")]
@@ -119,6 +122,9 @@ if ($singleRecipient.Trim()) {
     $theSingleRecipient = $singleRecipient.Trim()
     Write-Output "Running with sigle recipient: $theSingleRecipient."
 }
+if ($dontResetPassword) {
+    Write-Verbose "Not resetting passwords."
+}
 
 if ($logFile) {
     if (!(Test-Path $logFile)) {
@@ -173,9 +179,17 @@ foreach ($user in $users) {
     if ($daysSinceExpired -gt 2) {
         $resetPassword = $true
         if ($simulate) {
-            Write-Output "`nWould have reset the password for user $Name ($($user.EmailAddress))"
+            Write-Output "`nWould have reset the password for user $Name ($($user.EmailAddress))."
+        } elseif ($dontResetPassword) {
+            Write-Verbose "Not resetting the password for user $Name ($($user.EmailAddress))."
         } else {
-            Set-ADAccountPassword -Identity $user.SID -Reset -NewPassword (ConvertTo-SecureString -AsPlainText Get-RandomPassword -Force)
+            Write-Verbose "Resetting the password for user $Name ($($user.EmailAddress))."
+            $setADAccountPasswordExpression = 'Set-ADAccountPassword -Identity $user.SID -Reset -NewPassword $newPassword'
+            if ($adCredential) {
+                $setADAccountPasswordExpression += ' -Credential $adCredential'
+            }
+            $newPassword = ConvertTo-SecureString -AsPlainText Get-RandomPassword -Force
+            Invoke-Expression $setADAccountPasswordExpression
         }
     } else {
         if ($simulate) {
