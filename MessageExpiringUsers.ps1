@@ -77,6 +77,12 @@ function Get-MaxPasswordAge($user, $adCredential, $defaultmaxPasswordAge, $adDom
 
 Write-Verbose "Starting..."
 
+Import-Module ActiveDirectory
+if (!($?)) {
+    Write-Error "Could not import ActiveDirectory Module, exiting."
+    exit 1
+}
+
 if (!($adDomain)) {
     $adDomain = (Get-ADDomain -Current LocalComputer).Forest
 }
@@ -180,7 +186,7 @@ foreach ($user in $users) {
         if ($simulate) {
             Write-Output "`nWould have sent message to $completeEmailAddress with priority $priority`:`nSubject: $subject`nBody:`n$body"
         } else {
-            Write-Verbose "`nSending message to $completeEmailAddress with subject $subject..."
+            Write-Verbose "Sending message to $completeEmailAddress with subject $subject..."
             Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -From $from -To $emailaddress -Subject $subject -Body $body -BodyAsHtml -Priority $priority -Encoding "utf8" -UseSsl -Credential $smtpCredential
         }
         if ($logFile) { Add-Content $logfile "$formattedDate,$Name,$emailaddress,$daysToExpire,$(Get-Date $expiresOn -Format yyyyMMdd)" }
@@ -194,4 +200,4 @@ if (!($noProgress)) {
     Write-Progress -Activity "Checking users..." -Status "Ready" -Completed
 }
 
-Write-Verbose "`nDone."
+Write-Verbose "Done."

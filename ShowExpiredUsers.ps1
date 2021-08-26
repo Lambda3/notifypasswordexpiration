@@ -15,6 +15,12 @@ Set-StrictMode -Version 3.0
 
 Write-Verbose "Starting..."
 
+Import-Module ActiveDirectory
+if (!($?)) {
+    Write-Error "Could not import ActiveDirectory Module, exiting."
+    exit 1
+}
+
 if (!($adDomain)) {
     $adDomain = (Get-ADDomain -Current LocalComputer).Forest
 }
@@ -31,10 +37,14 @@ if ($adCredential) {
 $users = Invoke-Expression $getADUserExpression `
 | Where-Object { $_.Enabled -eq $true -and $_.passwordexpired -eq $true }
 
-Write-Output "Found $($users.Count) users expired."
-$today = Get-Date
-Write-Output "Sorted by name:"
-$users | Sort-Object -Property Name | ForEach-Object { "$($_.Name), $($_.EmailAddress), $($_.PasswordLastSet), $([math]::Round(($today - $_.PasswordLastSet).TotalDays, 0)) days" }
-Write-Output "`nSorted by last password set:"
-$users | Sort-Object -Property PasswordLastSet | ForEach-Object { "$($_.Name), $($_.EmailAddress), $($_.PasswordLastSet), $([math]::Round(($today - $_.PasswordLastSet).TotalDays, 0)) days" }
+if ($users) {
+    Write-Output "Found $($users.Count) users expired."
+    $today = Get-Date
+    Write-Output "Sorted by name:"
+    $users | Sort-Object -Property Name | ForEach-Object { "$($_.Name), $($_.EmailAddress), $($_.PasswordLastSet), $([math]::Round(($today - $_.PasswordLastSet).TotalDays, 0)) days" }
+    Write-Output "`nSorted by last password set:"
+    $users | Sort-Object -Property PasswordLastSet | ForEach-Object { "$($_.Name), $($_.EmailAddress), $($_.PasswordLastSet), $([math]::Round(($today - $_.PasswordLastSet).TotalDays, 0)) days" }
+} else {
+    Write-Output "No users have their password expired."
+}
 Write-Verbose "`nDone."

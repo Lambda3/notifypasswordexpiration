@@ -15,6 +15,12 @@ Set-StrictMode -Version 3.0
 
 Write-Verbose "Starting..."
 
+Import-Module ActiveDirectory
+if (!($?)) {
+    Write-Error "Could not import ActiveDirectory Module, exiting."
+    exit 1
+}
+
 if (!($adDomain)) {
     $adDomain = (Get-ADDomain -Current LocalComputer).Forest
 }
