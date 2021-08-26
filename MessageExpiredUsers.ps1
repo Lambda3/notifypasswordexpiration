@@ -146,6 +146,10 @@ if ($adCredential) {
 $users = Invoke-Expression $getADUserExpression `
 | Where-Object { $_.Enabled -eq $true -and $_.PasswordNeverExpires -eq $false -and $null -ne $_.EmailAddress -and $_.PasswordExpired -eq $true } `
 | Sort-Object -Property Name
+if (!($users)) {
+    Write-Verbose "No users are expired.`nDone."
+    exit 0
+}
 $getADDefaultDomainPasswordPolicyExpression = 'Get-ADDefaultDomainPasswordPolicy -Server $adDomain'
 if ($adCredential) {
     $getADDefaultDomainPasswordPolicyExpression += ' -Credential $adCredential'
