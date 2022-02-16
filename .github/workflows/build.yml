@@ -4,6 +4,8 @@ name: Publish Docker image
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "5 3 * * *"
   push:
     branches:
       - main
@@ -25,6 +27,15 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
+      - name: Check if update available
+        id: check
+        uses: giggio/docker-image-update-checker@v2
+        with:
+          base-image: mcr.microsoft.com/windows/servercore:ltsc2019
+          image: lambda3/notifypasswordexpiration:latest
+          os: windows
+          verbose: true
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta_latest
         uses: docker/metadata-action@v3
@@ -35,12 +46,13 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=tag
+        if: steps.check.outputs.needs-updating == 'true'
 
       - name: Build and push
         working-directory: .
         run: |
           docker login -u $env:DOCKER_USERNAME -p $env:DOCKER_PASSWORD
-          Invoke-Expression "docker build $($env:TAGS.Split("`n") | % { '-t "' + $_ + '"' }) $($env:LABELS.Split("`n") | % { '--label "' + $_ + '"' }) ."
+          Invoke-Expression "docker build --pull $($env:TAGS.Split("`n") | % { '-t "' + $_ + '"' }) $($env:LABELS.Split("`n") | % { '--label "' + $_ + '"' }) ."
           $($env:TAGS.Split("`n") | % { docker push $_ })
           docker logout
         env:
@@ -48,3 +60,4 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           TAGS: ${{ steps.meta_latest.outputs.tags }}
           LABELS: ${{ steps.meta_latest.outputs.labels }}
+        if: steps.check.outputs.needs-updating == 'true'
