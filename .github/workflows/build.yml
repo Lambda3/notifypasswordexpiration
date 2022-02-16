@@ -9,10 +9,10 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "**.md"
     tags:
       - "*"
+    paths-ignore:
+      - "**.md"
   pull_request:
     branches:
       - main
@@ -46,18 +46,35 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=tag
-        if: steps.check.outputs.needs-updating == 'true'
+        if: success() && (contains(fromJson('["push", "pull_request"]'), github.event_name) || (steps.check.outputs.needs-updating == 'true' && github.event_name == 'schedule'))
 
-      - name: Build and push
+      - name: Build image
         working-directory: .
         run: |
+          $ErrorActionPreference = "Stop"
           docker login -u $env:DOCKER_USERNAME -p $env:DOCKER_PASSWORD
+          if ($LASTEXITCODE -ne 0) { throw "Command failed." }
           Invoke-Expression "docker build --pull $($env:TAGS.Split("`n") | % { '-t "' + $_ + '"' }) $($env:LABELS.Split("`n") | % { '--label "' + $_ + '"' }) ."
-          $($env:TAGS.Split("`n") | % { docker push $_ })
           docker logout
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           TAGS: ${{ steps.meta_latest.outputs.tags }}
           LABELS: ${{ steps.meta_latest.outputs.labels }}
-        if: steps.check.outputs.needs-updating == 'true'
+        if: success() && (contains(fromJson('["push", "pull_request"]'), github.event_name) || (steps.check.outputs.needs-updating == 'true' && github.event_name == 'schedule'))
+
+      - name: Push image
+        run: |
+          $ErrorActionPreference = "Stop"
+          docker login -u $env:DOCKER_USERNAME -p $env:DOCKER_PASSWORD
+          if ($LASTEXITCODE -ne 0) { throw "Command failed." }
+          $($env:TAGS.Split("`n") | % {
+            docker push $_
+            if ($LASTEXITCODE -ne 0) { throw "Command failed." }
+          })
+          docker logout
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          TAGS: ${{ steps.meta_latest.outputs.tags }}
+        if: success() && (github.event_name == 'push' || (steps.check.outputs.needs-updating == 'true' && github.event_name == 'schedule'))
