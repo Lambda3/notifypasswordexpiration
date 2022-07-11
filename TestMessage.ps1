@@ -43,12 +43,12 @@ $body = @'
 if (!($smtpUser)) {
     $smtpUser = $from
 }
+
+$commandExpression = 'Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -From $from -To $destinationAddress -Subject "Test message" -Body $body -BodyAsHtml -Priority "High" -Encoding "utf8" -UseSsl'
 if ($smtpPassword) {
     $smtpCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $smtpUser, (ConvertTo-SecureString $smtpPassword -AsPlainText -Force)
-} else {
-    $smtpCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $smtpUser
+    $commandExpression += ' -Credential $smtpCredential'
 }
-
-Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -From $from -To $destinationAddress -Subject "Test message" -Body $body -BodyAsHtml -Priority "High" -Encoding "utf8" -UseSsl -Credential $smtpCredential
+Invoke-Expression $commandExpression
 
 Write-Verbose "Done."

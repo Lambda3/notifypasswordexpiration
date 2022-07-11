@@ -40,8 +40,8 @@ param (
     [Parameter(ParameterSetName = "providesauth_sendsmail")]
     [Parameter(ParameterSetName = "sendsmail")]
     [string]$smtpUser,
-    [Parameter(Mandatory, ParameterSetName = "providesauth_sendsmail")]
-    [Parameter(Mandatory, ParameterSetName = "sendsmail")]
+    [Parameter(ParameterSetName = "providesauth_sendsmail")]
+    [Parameter(ParameterSetName = "sendsmail")]
     [string]$smtpPassword,
     [ValidateScript( { [string]::IsNullOrWhiteSpace($_) -or (Test-Path $_ -PathType Leaf) })]
     [string]$emailBodyTemplateFile,
@@ -163,7 +163,11 @@ if (!($smtpUser)) {
 }
 if (!($simulate)) {
     Write-Verbose "Going to send messages using server $smtpServer`:$smtpPort from $from."
-    $smtpCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $smtpUser, (ConvertTo-SecureString $smtpPassword -AsPlainText -Force)
+    $sendMailCommandExpression = 'Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -From $from -To $emailaddress -Subject $subject -Body $body -BodyAsHtml -Priority "High" -Encoding "utf8" -UseSsl'
+    if ($smtpPassword) {
+        $smtpCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $smtpUser, (ConvertTo-SecureString $smtpPassword -AsPlainText -Force)
+        $sendMailCommandExpression += ' -Credential $smtpCredential'
+    }
 }
 [decimal]$count = $users.Count
 [decimal]$currentPosition = 0
@@ -206,7 +210,7 @@ foreach ($user in $users) {
             Write-Output "`nWould have sent message to $completeEmailAddress`:`nSubject: $subject`nBody:`n$body"
         } else {
             Write-Verbose "Sending message to $completeEmailAddress with subject $subject..."
-            Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -From $from -To $emailaddress -Subject $subject -Body $body -BodyAsHtml -Priority "High" -Encoding "utf8" -UseSsl -Credential $smtpCredential
+            Invoke-Expression $sendMailCommandExpression
         }
     }
     if ($logFile) { Add-Content $logfile "$formattedDate,$Name,$emailaddress,$daysSinceExpired,$(Get-Date $expiredOn -Format yyyyMMdd),$resetPassword" }
