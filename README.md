@@ -12,6 +12,10 @@ This repository contains `Dockerfile` definitions for
 
 - [`latest` (*agent/Dockerfile*)](https://github.com/Lambda3/notifypasswordexpiration/blob/main/Dockerfile)
 
+## Supported OS
+
+Currently this only run on Windows Server 2022 containers, but you can adapt the Dockerfile for earlier versions easily.
+
 ## Running
 
 You need to set pass the parameters according to each script. The main script is

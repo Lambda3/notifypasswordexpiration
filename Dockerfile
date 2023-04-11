@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 ENTRYPOINT [ "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "c:\\script\\MessageExpiringUsers.ps1" ]
 SHELL [ "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" ]
 RUN Add-WindowsFeature -Name RSAT-AD-PowerShell -IncludeAllSubFeature
